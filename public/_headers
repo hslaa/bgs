@@ -1,0 +1,8 @@
+/*
+  Content-Security-Policy: default-src 'self'; connect-src 'self' https://api.entur.io; img-src 'self' data:; style-src 'self'; script-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: geolocation=(self), camera=(), microphone=()
+
+/sw.js
+  Cache-Control: no-cache

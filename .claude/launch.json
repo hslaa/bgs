@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "bgs-dev",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-lc", "source ~/.nvm/nvm.sh && nvm use 24 >/dev/null && npx vite --port 5180 --strictPort"],
+      "port": 5180
+    },
+    {
+      "name": "bgs-prod",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-lc", "source ~/.nvm/nvm.sh && nvm use 24 >/dev/null && npm run build && npx wrangler dev --port 8787"],
+      "port": 8787
+    }
+  ]
+}

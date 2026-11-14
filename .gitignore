@@ -1,0 +1,7 @@
+node_modules
+dist
+.wrangler
+.DS_Store
+
+# Your own stops – never commit (Cloudflare gets it as the BGS_CONFIG build variable)
+config.local.json

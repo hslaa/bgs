@@ -1,0 +1,12 @@
+/**
+ * Static files only – no Worker code, no database.
+ * The browser fetches departures straight from Entur.
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "bgs",
+	"compatibility_date": "2026-11-14",
+	"assets": {
+		"directory": "./dist"
+	}
+}

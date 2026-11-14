@@ -1,0 +1,39 @@
+{
+  "stops": [
+    {
+      "name": "Vinderen",
+      "stopId": "NSR:StopPlace:58270",
+      "mode": "metro",
+      "group": "home",
+      "to": { "name": "Nationaltheatret", "stopId": "NSR:StopPlace:58404" }
+    },
+    {
+      "name": "Smestad",
+      "stopId": "NSR:StopPlace:58273",
+      "mode": "metro",
+      "group": "home",
+      "to": { "name": "Nationaltheatret", "stopId": "NSR:StopPlace:58404" }
+    },
+    {
+      "name": "Nationaltheatret",
+      "stopId": "NSR:StopPlace:58404",
+      "mode": "rail",
+      "group": "home",
+      "to": { "name": "Skøyen", "stopId": "NSR:StopPlace:59651" },
+      "excludeAuthorities": ["FLT:Authority:FLT"]
+    },
+    {
+      "name": "Skøyen",
+      "stopId": "NSR:StopPlace:59651",
+      "mode": "rail",
+      "group": "work",
+      "to": { "name": "Nationaltheatret", "stopId": "NSR:StopPlace:58404" },
+      "excludeAuthorities": ["FLT:Authority:FLT"]
+    }
+  ],
+  "places": [
+    { "group": "home", "lat": 59.9399, "lon": 10.6943 },
+    { "group": "work", "lat": 59.9224, "lon": 10.6785 }
+  ],
+  "radiusKm": 1.5
+}

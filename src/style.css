@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+/* The screenshot script has its own inline CSS – keep its class names out of the app. */
+@source not "../scripts";
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    font-variant-numeric: tabular-nums;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
