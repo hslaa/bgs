@@ -3,6 +3,12 @@
 A tiny departure board for a daily commute in Oslo. Open it and the next departures are already
 there – no searching, no tapping.
 
+<p align="center">
+  <img src="docs/screenshots/home-light.png" width="300" alt="Morning view: the next metro departures from two nearby stations to Nationaltheatret, and the trains on from there, each with its arrival time">
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/work-dark.png" width="300" alt="Afternoon view in dark mode: the next trains to Nationaltheatret, with the morning boards below">
+</p>
+
 - A few configured stops, each showing only departures that go to its **destination** – with
   the time you'll **arrive** there, so you can tell which station is actually faster. Chain them
   for a trip with a change: metro into town, then the train on from there.
@@ -14,7 +20,7 @@ there – no searching, no tapping.
 - A static PWA on Cloudflare Workers: no server code, no database, no login. Add it to the
   home screen and it opens instantly from cache.
 
-The UI is in Norwegian.
+The UI is in Norwegian. The screenshots use the example config.
 
 ## Configuration
 
