@@ -1,6 +1,6 @@
 # bgs
 
-A tiny departure board for a daily commute in Oslo. Open it and the next departures are already
+A tiny departure board for a daily commute in Oslo made specifically for me. Open it and the next departures are already
 there – no searching, no tapping.
 
 <p align="center">
