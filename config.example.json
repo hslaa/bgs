@@ -29,6 +29,20 @@
       "group": "work",
       "to": { "name": "Nationaltheatret", "stopId": "NSR:StopPlace:58404" },
       "excludeAuthorities": ["FLT:Authority:FLT"]
+    },
+    {
+      "name": "Nationaltheatret",
+      "stopId": "NSR:StopPlace:58404",
+      "mode": "metro",
+      "group": "work",
+      "to": { "name": "Vinderen", "stopId": "NSR:StopPlace:58270" }
+    },
+    {
+      "name": "Nationaltheatret",
+      "stopId": "NSR:StopPlace:58404",
+      "mode": "metro",
+      "group": "work",
+      "to": { "name": "Smestad", "stopId": "NSR:StopPlace:58273" }
     }
   ],
   "places": [

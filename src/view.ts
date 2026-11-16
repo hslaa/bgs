@@ -38,7 +38,7 @@ function badge(d: Departure, stop: Stop, extra = ""): string {
   return `<span class="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-xs font-bold ${lineClass(stop.mode, d.line)}${extra}">${esc(d.line)}</span>`;
 }
 
-function row(d: Departure, stop: Stop, now: number, primary: boolean): string {
+function row(d: Departure, stop: Stop, now: number): string {
   const delay = delayMinutes(d);
   const time =
     delay > 0
@@ -51,7 +51,7 @@ function row(d: Departure, stop: Stop, now: number, primary: boolean): string {
   // Metro: just the number, next to the time. Rail: badge and sign text on a line of their own.
   const metro = stop.mode === "metro";
   return `<li class="grid grid-cols-[5.5rem_1fr_auto] items-baseline gap-x-2 py-1.5${d.cancelled ? " opacity-60" : ""}">
-    <span class="${primary ? "text-2xl" : "text-lg"} font-semibold">${left}</span>
+    <span class="text-2xl font-semibold">${left}</span>
     <span class="whitespace-nowrap"><span class="${d.cancelled ? "line-through" : ""}">${time}</span>${metro ? " " + badge(d, stop, " ml-1 align-[0.1em]") : ""}</span>
     <span class="text-sm whitespace-nowrap text-stone-500">${d.cancelled ? "" : `framme ${clock(d.arrival)}`}</span>
     ${
@@ -64,19 +64,18 @@ function row(d: Departure, stop: Stop, now: number, primary: boolean): string {
   </li>`;
 }
 
-function board(stop: Stop, deps: Departure[] | undefined, now: number, primary: boolean): string {
-  const count = (primary ? ROWS.primary : ROWS.secondary)[stop.mode];
-  const list = deps ? upcoming(deps, now, count) : null;
+function board(stop: Stop, deps: Departure[] | undefined, now: number): string {
+  const list = deps ? upcoming(deps, now, ROWS[stop.mode]) : null;
   const body =
     list === null
       ? `<p class="py-2 text-stone-500">Henter avganger …</p>`
       : list.length === 0
         ? `<p class="py-2 text-stone-500">Ingen avganger</p>`
-        : `<ol>${list.map((d) => row(d, stop, now, primary)).join("")}</ol>`;
+        : `<ol>${list.map((d) => row(d, stop, now)).join("")}</ol>`;
 
-  return `<section class="${primary ? "" : "text-stone-600 dark:text-stone-400"}">
+  return `<section>
     <h2 class="flex items-baseline justify-between border-b border-stone-200 pb-1 dark:border-stone-800">
-      <span class="${primary ? "text-xl" : "text-base"} font-bold">${esc(stop.name)}</span>
+      <span class="text-xl font-bold">${esc(stop.name)}</span>
       <span class="text-xs text-stone-500">til ${esc(stop.to.name)}</span>
     </h2>
     ${body}
@@ -102,15 +101,31 @@ function status(s: ViewState, now: number): string {
   </button>`;
 }
 
+const TRIPS: { group: Group; label: string }[] = [
+  { group: "home", label: "Til jobb" },
+  { group: "work", label: "Hjem" },
+];
+
+/** Switch between the two trips, for when position and clock guess wrong. */
+function tripSwitch(active: Group): string {
+  const buttons = TRIPS.map(({ group, label }) => {
+    const on = group === active;
+    const look = on
+      ? "bg-white text-stone-900 shadow-sm dark:bg-stone-700 dark:text-stone-100"
+      : "text-stone-500 dark:text-stone-400";
+    return `<button type="button" data-trip="${group}" aria-pressed="${on}" class="rounded-full px-3 py-1 ${look}">${label}</button>`;
+  });
+  return `<div role="group" aria-label="Tur" class="flex rounded-full bg-stone-200/70 p-0.5 text-sm font-semibold dark:bg-stone-800/70">${buttons.join("")}</div>`;
+}
+
 export function render(s: ViewState, now: number): string {
-  const primary = STOPS.filter((x) => x.group === s.group);
-  const secondary = STOPS.filter((x) => x.group !== s.group);
+  // Only the trip you're on. If the config has stops for one trip only, that one is always shown.
+  const trips = new Set(STOPS.map((x) => x.group));
+  const group = trips.has(s.group) ? s.group : STOPS[0].group;
+  const stops = STOPS.filter((x) => x.group === group);
   return `<div class="mx-auto max-w-md space-y-6 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-    <header class="flex justify-end">${status(s, now)}</header>
-    ${primary.map((st) => board(st, s.data?.[st.key], now, true)).join("")}
-    <div class="space-y-5 pt-2">
-      ${secondary.map((st) => board(st, s.data?.[st.key], now, false)).join("")}
-    </div>
+    <header class="flex items-center justify-between gap-3">${trips.size > 1 ? tripSwitch(group) : "<span></span>"}${status(s, now)}</header>
+    ${stops.map((st) => board(st, s.data?.[st.key], now)).join("")}
     <footer class="text-center text-xs text-stone-400 dark:text-stone-600">Data fra Entur, under NLOD</footer>
   </div>`;
 }

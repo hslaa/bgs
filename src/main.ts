@@ -1,6 +1,6 @@
 import "./style.css";
-import { groupByClock, groupByPosition } from "./board";
-import { PLACE_RADIUS_KM, PLACES, REFRESH_MS, STOPS, type Group } from "./config";
+import { groupByPosition, pickGroup } from "./board";
+import { MANUAL_TRIP_MS, PLACE_RADIUS_KM, PLACES, REFRESH_MS, STOPS, type Group } from "./config";
 import { fetchDepartures, type Departure } from "./entur";
 import { render } from "./view";
 
@@ -15,6 +15,8 @@ const state = {
   failing: false,
   /** Set when the position is near one of the configured places. Otherwise the clock decides. */
   posGroup: null as Group | null,
+  /** The trip picked with the switch, and when. */
+  manual: null as { group: Group; at: number } | null,
 };
 
 let inflight: AbortController | null = null;
@@ -29,7 +31,7 @@ function draw() {
       updatedAt: state.updatedAt,
       loading: inflight !== null,
       failing: state.failing,
-      group: state.posGroup ?? groupByClock(now),
+      group: pickGroup(now, state.posGroup, state.manual, MANUAL_TRIP_MS),
     },
     now,
   );
@@ -87,7 +89,13 @@ document.addEventListener("visibilitychange", () => {
 });
 
 app.addEventListener("click", (e) => {
-  if ((e.target as Element).closest("[data-action=refresh]")) void refresh();
+  const target = e.target as Element;
+  if (target.closest("[data-action=refresh]")) void refresh();
+  const trip = target.closest<HTMLElement>("[data-trip]")?.dataset.trip;
+  if (trip === "home" || trip === "work") {
+    state.manual = { group: trip, at: Date.now() };
+    draw();
+  }
 });
 
 // Keep the countdown ticking.

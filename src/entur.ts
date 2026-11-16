@@ -1,4 +1,5 @@
 import type { Stop } from "./config";
+import type { StopConfig } from "./config-schema";
 
 export type Departure = {
   id: string;
@@ -41,16 +42,41 @@ const FRAGMENT = `fragment Call on EstimatedCall {
   }
 }`;
 
-/** One query for all stops, with an alias per stop. */
+/**
+ * How many departures to ask for. Trains: most departures in each direction stop where we're
+ * going, so 20 is plenty. Metro: lines split up after a shared stretch, and at a busy station
+ * perhaps one departure in fifteen goes our way. So we ask for up to 100, but at most PER_LINE of
+ * each line and destination – far enough ahead even for a line that runs every 15 minutes.
+ */
+const FETCH = { rail: 20, metro: 100 } as const;
+export const PER_LINE = 6;
+
+/** Gives each stop its board key and query alias. Stops that need the same departures share one query. */
+export function toStops(stops: StopConfig[]): Stop[] {
+  const aliases = new Map<string, string>();
+  return stops.map((s, i) => {
+    const same = JSON.stringify([s.stopId, s.mode, [...(s.excludeAuthorities ?? [])].sort()]);
+    if (!aliases.has(same)) aliases.set(same, `q${aliases.size}`);
+    return { ...s, key: `s${i}`, query: aliases.get(same)!, fetch: FETCH[s.mode] };
+  });
+}
+
+/** One request for all stops, with one alias per distinct query. */
 export function buildQuery(stops: Stop[]): string {
-  const fields = stops.map((s) => {
+  const fields = new Map<string, string>();
+  for (const s of stops) {
+    if (fields.has(s.query)) continue;
     const not = s.excludeAuthorities?.length
       ? `, not: [{ authorities: ${JSON.stringify(s.excludeAuthorities)} }]`
       : "";
     const filters = `[{ select: [{ transportModes: [{ transportMode: ${s.mode} }] }]${not} }]`;
-    return `  ${s.key}: stopPlace(id: "${s.stopId}") { estimatedCalls(numberOfDepartures: ${s.fetch}, includeCancelledTrips: true, filters: ${filters}) { ...Call } }`;
-  });
-  return `${FRAGMENT}\n{\n${fields.join("\n")}\n}`;
+    const limit = `numberOfDepartures: ${s.fetch}, numberOfDeparturesPerLineAndDestinationDisplay: ${PER_LINE}`;
+    fields.set(
+      s.query,
+      `  ${s.query}: stopPlace(id: "${s.stopId}") { estimatedCalls(${limit}, includeCancelledTrips: true, filters: ${filters}) { ...Call } }`,
+    );
+  }
+  return `${FRAGMENT}\n{\n${[...fields.values()].join("\n")}\n}`;
 }
 
 /** True if the call is at the stop place itself or one of its children (metro, rail …). */
@@ -59,12 +85,17 @@ function isAt(call: RawNextCall, stopId: string): boolean {
   return sp?.id === stopId || sp?.parent?.id === stopId;
 }
 
-/** Keeps only departures that later call at `toId` (= the right direction). */
-export function parseCalls(calls: RawCall[], toId: string): Departure[] {
+/**
+ * Keeps only departures from `fromId` that later call at `toId` (= the right direction).
+ * A departure that comes back to `fromId` before reaching `toId` (a metro going round the ring)
+ * is left out: the same train is listed again for its next pass, and gets there just as soon.
+ */
+export function parseCalls(calls: RawCall[], fromId: string, toId: string): Departure[] {
   const out: Departure[] = [];
   for (const c of calls) {
-    const dest = c.serviceJourneyEstimatedCalls?.next.find((n) => isAt(n, toId));
-    if (!dest) continue;
+    const next = c.serviceJourneyEstimatedCalls?.next ?? [];
+    const dest = next.find((n) => isAt(n, toId) || isAt(n, fromId));
+    if (!dest || !isAt(dest, toId)) continue;
     // Running, but skips the destination: not relevant.
     if (!c.cancellation && (dest.cancellation || !dest.forAlighting)) continue;
     out.push({
@@ -94,6 +125,6 @@ export async function fetchDepartures(stops: Stop[], signal: AbortSignal): Promi
   };
   if (json.errors?.length || !json.data) throw new Error(json.errors?.[0]?.message ?? "Empty response");
   const out: Record<string, Departure[]> = {};
-  for (const s of stops) out[s.key] = parseCalls(json.data[s.key]?.estimatedCalls ?? [], s.to.stopId);
+  for (const s of stops) out[s.key] = parseCalls(json.data[s.query]?.estimatedCalls ?? [], s.stopId, s.to.stopId);
   return out;
 }
