@@ -47,6 +47,7 @@ export function delayMinutes(d: Departure): number {
   return Math.max(0, Math.floor(d.expected / 60_000) - Math.floor(d.aimed / 60_000));
 }
 
+/** Before 12:00 the trip from home, after that the trip from work. */
 export function groupByClock(ms: number): Group {
   const hour = Number(
     new Intl.DateTimeFormat("nb-NO", { timeZone: TZ, hour: "numeric", hourCycle: "h23" }).format(ms),
@@ -75,4 +76,15 @@ export function groupByPosition(
     if (km <= radiusKm && (!best || km < best.km)) best = { group: a.group, km };
   }
   return best?.group ?? null;
+}
+
+/** A hand-picked trip wins while it is fresh, then the position, then the clock. */
+export function pickGroup(
+  now: number,
+  posGroup: Group | null,
+  manual: { group: Group; at: number } | null,
+  manualMs: number,
+): Group {
+  if (manual && now - manual.at < manualMs) return manual.group;
+  return posGroup ?? groupByClock(now);
 }

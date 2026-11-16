@@ -12,7 +12,10 @@ export type StopConfig = {
   /** Entur stop place id, e.g. "NSR:StopPlace:58404". */
   stopId: string;
   mode: "metro" | "rail";
-  /** Which place the stop belongs to – decides the order on screen. */
+  /**
+   * Which trip the stop is part of: "home" – from home (e.g. the metro in, then the train on to
+   * work), "work" – from work. Only the trip you're on is shown.
+   */
   group: Group;
   /** Only departures that call here later are shown, with the arrival time here. */
   to: Target;
@@ -22,9 +25,9 @@ export type StopConfig = {
 
 export type AppConfig = {
   stops: StopConfig[];
-  /** Approximate centre of each place, used only to pick the order. Never sent anywhere. */
+  /** Approximate centre of each place, used only to pick the trip. Never sent anywhere. */
   places: { group: Group; lat: number; lon: number }[];
-  /** How close (km) you must be to a place for it to go first. Default 1.5. */
+  /** How close (km) you must be to a place for its trip to be shown. Default 1.5. */
   radiusKm?: number;
 };
 

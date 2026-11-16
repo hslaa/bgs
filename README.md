@@ -4,17 +4,18 @@ A tiny departure board for a daily commute in Oslo made specifically for me. Ope
 there – no searching, no tapping.
 
 <p align="center">
-  <img src="docs/screenshots/home-light.png" width="300" alt="Morning view: the next metro departures from two nearby stations to Nationaltheatret, and the trains on from there, each with its arrival time">
+  <img src="docs/screenshots/home-light.png" width="300" alt="The trip to work: the next metro departures from two nearby stations to Nationaltheatret, and the trains on from there, each with its arrival time">
   &nbsp;&nbsp;
-  <img src="docs/screenshots/work-dark.png" width="300" alt="Afternoon view in dark mode: the next trains to Nationaltheatret, with the morning boards below">
+  <img src="docs/screenshots/work-dark.png" width="300" alt="The trip home, in dark mode: the next trains to Nationaltheatret, and the metro on from there to each of the two stations">
 </p>
 
 - A few configured stops, each showing only departures that go to its **destination** – with
   the time you'll **arrive** there, so you can tell which station is actually faster. Chain them
-  for a trip with a change: metro into town, then the train on from there.
-- Two places, **home** and **work**. The one you're near (within 1.5 km) goes first; without a
-  position the clock decides (before 12:00 home, after that work). The position never leaves
-  the phone.
+  for a trip with a change: metro into town, then the train on from there – and back again.
+- Two trips, from **home** and from **work**, and only the one you're on is shown. The place
+  you're near (within 1.5 km) decides; without a position the clock does (before 12:00 the trip
+  from home, after that the trip from work). The switch at the top flips it for an hour. The
+  position never leaves the phone.
 - Live data from [Entur](https://developer.entur.org/), refreshed every 20 seconds and whenever
   the app is reopened. Delays, cancellations and fixed line colours included.
 - A static PWA on Cloudflare Workers: no server code, no database, no login. Add it to the
@@ -50,7 +51,8 @@ Your stops are never committed. The build reads the config from, in order:
 
 Find stop place ids with Entur's geocoder, e.g.
 `https://api.entur.io/geocoder/v1/autocomplete?text=Skøyen&layers=venue`. `mode` is `metro` or
-`rail`; `group` is `home` or `work`; `to` is where you're going from that stop. See `config.example.json` and `src/config-schema.ts`.
+`rail`; `group` is the trip the stop is part of, `home` (from home) or `work` (from work); `to`
+is where you're going from that stop. See `config.example.json` and `src/config-schema.ts`.
 
 ## Local development
 
