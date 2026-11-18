@@ -35,14 +35,10 @@
       "stopId": "NSR:StopPlace:58404",
       "mode": "metro",
       "group": "work",
-      "to": { "name": "Vinderen", "stopId": "NSR:StopPlace:58270" }
-    },
-    {
-      "name": "Nationaltheatret",
-      "stopId": "NSR:StopPlace:58404",
-      "mode": "metro",
-      "group": "work",
-      "to": { "name": "Smestad", "stopId": "NSR:StopPlace:58273" }
+      "to": [
+        { "name": "Vinderen", "stopId": "NSR:StopPlace:58270" },
+        { "name": "Smestad", "stopId": "NSR:StopPlace:58273" }
+      ]
     }
   ],
   "places": [

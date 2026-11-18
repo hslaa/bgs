@@ -57,7 +57,8 @@ export function toStops(stops: StopConfig[]): Stop[] {
   return stops.map((s, i) => {
     const same = JSON.stringify([s.stopId, s.mode, [...(s.excludeAuthorities ?? [])].sort()]);
     if (!aliases.has(same)) aliases.set(same, `q${aliases.size}`);
-    return { ...s, key: `s${i}`, query: aliases.get(same)!, fetch: FETCH[s.mode] };
+    const to = Array.isArray(s.to) ? s.to : [s.to];
+    return { ...s, to, key: `s${i}`, query: aliases.get(same)!, fetch: FETCH[s.mode] };
   });
 }
 
@@ -86,18 +87,20 @@ function isAt(call: RawNextCall, stopId: string): boolean {
 }
 
 /**
- * Keeps only departures from `fromId` that later call at `toId` (= the right direction).
- * A departure that comes back to `fromId` before reaching `toId` (a metro going round the ring)
- * is left out: the same train is listed again for its next pass, and gets there just as soon.
+ * Keeps only departures from `fromId` that later stop at one of `toIds` (= the right direction),
+ * with the arrival at the first of them. A departure that comes back to `fromId` before that
+ * (a metro going round the ring) is left out: the same train is listed again for its next
+ * pass, and gets there just as soon.
  */
-export function parseCalls(calls: RawCall[], fromId: string, toId: string): Departure[] {
+export function parseCalls(calls: RawCall[], fromId: string, toIds: string[]): Departure[] {
   const out: Departure[] = [];
   for (const c of calls) {
     const next = c.serviceJourneyEstimatedCalls?.next ?? [];
-    const dest = next.find((n) => isAt(n, toId) || isAt(n, fromId));
-    if (!dest || !isAt(dest, toId)) continue;
-    // Running, but skips the destination: not relevant.
-    if (!c.cancellation && (dest.cancellation || !dest.forAlighting)) continue;
+    const back = next.findIndex((n) => isAt(n, fromId));
+    const ahead = (back === -1 ? next : next.slice(0, back)).filter((n) => toIds.some((id) => isAt(n, id)));
+    // Running: the first destination it actually stops at, if any. Cancelled: shown anyway.
+    const dest = c.cancellation ? ahead[0] : ahead.find((n) => !n.cancellation && n.forAlighting);
+    if (!dest) continue;
     out.push({
       id: `${c.serviceJourney.id}@${c.date}`,
       line: c.serviceJourney.line.publicCode ?? "",
@@ -125,6 +128,9 @@ export async function fetchDepartures(stops: Stop[], signal: AbortSignal): Promi
   };
   if (json.errors?.length || !json.data) throw new Error(json.errors?.[0]?.message ?? "Empty response");
   const out: Record<string, Departure[]> = {};
-  for (const s of stops) out[s.key] = parseCalls(json.data[s.query]?.estimatedCalls ?? [], s.stopId, s.to.stopId);
+  for (const s of stops) {
+    const calls = json.data[s.query]?.estimatedCalls ?? [];
+    out[s.key] = parseCalls(calls, s.stopId, s.to.map((t) => t.stopId));
+  }
   return out;
 }

@@ -39,7 +39,7 @@ describe("parseCalls", () => {
         call("2026-11-17T07:40:00+01:00", [next(OTHER, "2026-11-17T07:42:00+01:00")]), // wrong direction
       ],
       HERE,
-      DEST,
+      [DEST],
     );
     expect(deps).toHaveLength(1);
     expect(deps[0].destination).toBe("Sentrum");
@@ -51,7 +51,7 @@ describe("parseCalls", () => {
     const deps = parseCalls(
       [call("2026-11-17T16:03:00+01:00", [next({ id: DEST, parent: null }, "2026-11-17T16:09:00+01:00")])],
       HERE,
-      DEST,
+      [DEST],
     );
     expect(deps).toHaveLength(1);
   });
@@ -66,7 +66,7 @@ describe("parseCalls", () => {
         }),
       ],
       HERE,
-      DEST,
+      [DEST],
     );
     expect(deps.map((d) => [clock(d.expected), d.cancelled])).toEqual([["16:07", true]]);
   });
@@ -78,7 +78,7 @@ describe("parseCalls", () => {
         call("2026-11-17T07:46:00+01:00", [next(DEST_METRO, "2026-11-17T07:57:00+01:00")]),
       ],
       HERE,
-      DEST,
+      [DEST],
     );
     expect(deps.map((d) => clock(d.expected))).toEqual(["07:46", "07:50"]);
   });
@@ -97,7 +97,7 @@ describe("parseCalls", () => {
         call("2026-11-17T08:06:00+01:00", [next(between, "2026-11-17T08:09:00+01:00")]), // ends before
       ],
       HERE,
-      WORK,
+      [WORK],
     );
     expect(deps.map((d) => [d.line, d.destination, clock(d.expected), clock(d.arrival)])).toEqual([
       ["L1", "Vestby", "08:04", "08:11"],
@@ -115,9 +115,32 @@ describe("parseCalls", () => {
         call("2026-11-17T15:29:00+01:00", [next(DEST_METRO, "2026-11-17T15:40:00+01:00")], ring),
       ],
       HERE,
-      DEST,
+      [DEST],
     );
     expect(deps.map((d) => [clock(d.expected), clock(d.arrival)])).toEqual([["15:29", "15:40"]]);
+  });
+
+  it("with several destinations: departures to any of them, in one list, arriving at the first it stops at", () => {
+    const a = { id: "NSR:StopPlace:1100", parent: null };
+    const b = { id: "NSR:StopPlace:1200", parent: null };
+    const four = { serviceJourney: { id: "four", line: { publicCode: "4" } } };
+    const deps = parseCalls(
+      [
+        call("2026-11-17T17:03:00+01:00", [next(OTHER, "2026-11-17T17:10:00+01:00"), next(b, "2026-11-17T17:19:00+01:00")], four),
+        call("2026-11-17T16:59:00+01:00", [next(a, "2026-11-17T17:10:00+01:00")]),
+        call("2026-11-17T17:01:00+01:00", [next(OTHER, "2026-11-17T17:04:00+01:00")]), // neither
+        call("2026-11-17T17:05:00+01:00", [next(a, "2026-11-17T17:12:00+01:00", { forAlighting: false }), next(b, "2026-11-17T17:20:00+01:00")]), // skips a
+        call("2026-11-17T17:07:00+01:00", [next(a, "2026-11-17T17:15:00+01:00"), next(b, "2026-11-17T17:25:00+01:00")]), // both
+      ],
+      HERE,
+      [a.id, b.id],
+    );
+    expect(deps.map((d) => [clock(d.expected), d.line, clock(d.arrival)])).toEqual([
+      ["16:59", "5", "17:10"],
+      ["17:03", "4", "17:19"],
+      ["17:05", "5", "17:20"],
+      ["17:07", "5", "17:15"],
+    ]);
   });
 });
 
@@ -212,6 +235,12 @@ describe("buildQuery", () => {
     expect(q).toContain(`q0: stopPlace(id: "NSR:StopPlace:3000") { estimatedCalls(numberOfDepartures: 100, numberOfDeparturesPerLineAndDestinationDisplay: ${PER_LINE},`);
     expect(q).toContain(`q1: stopPlace(id: "NSR:StopPlace:4000") { estimatedCalls(numberOfDepartures: 20,`);
   });
+
+  it("always gives a board its destinations as a list", () => {
+    expect(stops[0].to).toEqual([{ name: "C", stopId: DEST }]);
+    const [both] = toStops([{ ...stops[0], to: [{ name: "C", stopId: DEST }, { name: "D", stopId: "NSR:StopPlace:5000" }] }]);
+    expect(both.to.map((t) => t.name)).toEqual(["C", "D"]);
+  });
 });
 
 describe("validateConfig", () => {
@@ -229,6 +258,13 @@ describe("validateConfig", () => {
     expect(() => validateConfig({ ...valid, stops: [{ ...valid.stops[0], stopId: "123" }] })).toThrow("stops[0].stopId");
     expect(() => validateConfig({ ...valid, stops: [{ ...valid.stops[0], mode: "bus" }] })).toThrow("stops[0].mode");
     expect(() => validateConfig({ ...valid, stops: [{ ...valid.stops[0], to: undefined }] })).toThrow("stops[0].to");
+    expect(() => validateConfig({ ...valid, stops: [{ ...valid.stops[0], to: [] }] })).toThrow("stops[0].to");
+    expect(() => validateConfig({ ...valid, stops: [{ ...valid.stops[0], to: [{ name: "B", stopId: "1" }] }] })).toThrow("stops[0].to");
+  });
+
+  it("accepts a list of destinations", () => {
+    const to = [{ name: "Sentrum", stopId: DEST }, { name: "B", stopId: "NSR:StopPlace:1100" }];
+    expect(validateConfig({ ...valid, stops: [{ ...valid.stops[0], to }] }).stops[0].to).toEqual(to);
   });
 });
 

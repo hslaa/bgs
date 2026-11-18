@@ -76,7 +76,7 @@ function board(stop: Stop, deps: Departure[] | undefined, now: number): string {
   return `<section>
     <h2 class="flex items-baseline justify-between border-b border-stone-200 pb-1 dark:border-stone-800">
       <span class="text-xl font-bold">${esc(stop.name)}</span>
-      <span class="text-xs text-stone-500">til ${esc(stop.to.name)}</span>
+      <span class="text-xs text-stone-500">til ${esc(stop.to.map((t) => t.name).join(" / "))}</span>
     </h2>
     ${body}
   </section>`;

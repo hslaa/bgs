@@ -17,8 +17,12 @@ export type StopConfig = {
    * work), "work" – from work. Only the trip you're on is shown.
    */
   group: Group;
-  /** Only departures that call here later are shown, with the arrival time here. */
-  to: Target;
+  /**
+   * Only departures that call here later are shown, with the arrival time here. Can be a list
+   * when more than one place will do: departures to any of them share the board, each with its
+   * arrival at the first of them it stops at.
+   */
+  to: Target | Target[];
   /** Operators to leave out, e.g. ["FLT:Authority:FLT"] (Flytoget). */
   excludeAuthorities?: string[];
 };
@@ -47,7 +51,10 @@ export function validateConfig(value: unknown): AppConfig {
     if (!STOP_ID.test(s.stopId ?? "")) fail(`stops[${i}].stopId must look like NSR:StopPlace:123`);
     if (s.mode !== "metro" && s.mode !== "rail") fail(`stops[${i}].mode must be "metro" or "rail"`);
     if (!GROUPS.includes(s.group)) fail(`stops[${i}].group must be "home" or "work"`);
-    if (!s.to?.name || !STOP_ID.test(s.to?.stopId ?? "")) fail(`stops[${i}].to needs name and stopId`);
+    const to = Array.isArray(s.to) ? s.to : [s.to];
+    if (to.length === 0 || to.some((t) => !t?.name || !STOP_ID.test(t?.stopId ?? ""))) {
+      fail(`stops[${i}].to needs name and stopId (or a list of them)`);
+    }
   });
   if (!Array.isArray(c.places)) fail("places must be a list");
   c.places.forEach((p, i) => {

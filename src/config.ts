@@ -1,4 +1,4 @@
-import type { AppConfig, StopConfig } from "./config-schema";
+import type { AppConfig, StopConfig, Target } from "./config-schema";
 import { toStops } from "./entur";
 
 export type { Group } from "./config-schema";
@@ -7,7 +7,9 @@ export type { Group } from "./config-schema";
 declare const __BGS_CONFIG__: AppConfig;
 const config = __BGS_CONFIG__;
 
-export type Stop = StopConfig & {
+export type Stop = Omit<StopConfig, "to"> & {
+  /** Where departures must go, always as a list. */
+  to: Target[];
   /** Identifies the board. */
   key: string;
   /** GraphQL alias. Stops that need the same departures (same stop place and filters) share one. */
